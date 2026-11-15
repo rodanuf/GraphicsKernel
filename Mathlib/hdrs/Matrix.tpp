@@ -31,10 +31,34 @@ template <typename T, std::size_t Rows, std::size_t Columns>
 Matrix<T, Rows, Columns>::Matrix(Matrix<T> &&other) : 
 
 
-template<typename T, std::size_t Rows, std::size_t Columns>
+template <typename T, std::size_t Rows, std::size_t Columns>
 void Matrix<T, Rows, Columns>::AddElement(int index, const T &num)
 {
     _array[i] += num;
+}
+
+template <typename T, std::sie_t Rows, std::size_t Coluns>
+void Matrix<T, Rows, Columns>::SwapRows(int rowOne, int rowTwo)
+{
+    T elem;
+    for (int k = 0; k < _columns; k++)
+    {
+        elem = _array[k + rowTwo];
+        _array[k + rowTwo] = _array[k + rowOne];
+        _array[k + rowOne] = elem;
+    }
+}
+
+template <typename T, std::size_t Rows, std::size_t Columns>
+void Matrix<T, Rows, Columns>::SwapColumns(int colOne, int colTwo)
+{
+    T elem;
+    for (int k = 0; k < _rows; k++)
+    {
+        elem = _array[k + colTwo];
+        _array[k + colTwo] = _array[k + colOne];
+        _array[k + colOne] = elem;
+    }
 }
 
 template <typename T, std::size_t Rows, std::size_t Columns>
@@ -101,20 +125,51 @@ int Matrix<T, Rows, Columns>::GetNumCol()
 template <typename T, std::size_t Rows, std::size_t Columns>
 T Matrix<T, Rows, Columns>::CalculateDet()
 {
-    Matrix<T, _rows, _columns> A = (&this);
+    Matrix<T, _rows, _columns> A = (*this);
+    int s = 0;
     int target_line;
+    T max_el = 0;
+    T det = 0;
 
-    for (int k = 0; k < _rows; k++)
+    for (int k = 0; k < _columns; k++)
     {
-        T max_el = 0;
-        if (max_el < A[k])
+        target_line = k;
+        max_el = std::abs(A[k*_columns + k]);
+        for (int g = k; g < _rows; g++)
         {
-            max_el = A[k];
-            target_line = k;
-            if (k == _rows - 1)
+            if (max_el < std::abs(A[k*_columns + g]))
             {
-                target_line
+                max_el = std::abs(A[k*_columns + g]);
+                target_line = g;
+            }         
+        }
+        if (max_el < std::pow(10, -12))
+        {
+            return det;
+        }
+        if (k != target_line)
+        {
+            A.SwapRows(k, target_line);
+            s += 1; 
+        }
+
+        for (int i = k + 1; i < _rows; i++)
+        {
+            T factor = A[k*_rows + i]/A[k*_columns + k];
+            for (int j = k + 1; j < _columns; j++)
+            {
+                A[j*_rows + i] -= facor * A[j*_rows + k];
             }
         }
     }
+    det = 1;
+    for (int k = 0; k < _columns; k++)
+    {
+        det = det * A[k*_columns + k];
+    }
+    if (s % 2 != 0)
+    {
+        return -det;
+    }
+    return det;
 }

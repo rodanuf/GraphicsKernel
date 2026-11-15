@@ -1,6 +1,7 @@
 #pragma once
 
 #include "build/_deps/lab3_2ndsem-src/headers/array_sequence.hpp"
+#include <cmath>
 
 template <typename T, std::size_t Rows = 4, std::size_t Columns = 4>
 class Matrix 
@@ -22,6 +23,8 @@ public:
     Matrix(Matrix<T> &&other);
 
     void AddElement(int index, const T &num); // rewrite without void
+    void SwapRows(int rowOne, int rowTwo);
+    void SwapColumns(int colOne, int colTwo);
     void Transpose();
 
     bool IsSquare();

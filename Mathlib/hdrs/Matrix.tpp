@@ -37,7 +37,7 @@ void Matrix<T, Rows, Columns>::AddElement(int index, const T &num)
     _array[i] += num;
 }
 
-template <typename T, std::sie_t Rows, std::size_t Coluns>
+template <typename T, std::size_t Rows, std::size_t Columns>
 void Matrix<T, Rows, Columns>::SwapRows(int rowOne, int rowTwo)
 {
     T elem;
@@ -173,3 +173,24 @@ T Matrix<T, Rows, Columns>::CalculateDet()
     }
     return det;
 }
+
+template <typename T, std::size_t Rows, std::size_t Columns>
+T Matrix<T, Rows, Columns>::GetElement(int i, int j)
+{
+    i -= 1;
+    j -= 1; 
+    return _array[(i + j) + j*_rows];
+}
+
+template <typename T, std::size_t Rows, std::size_t Columns>
+T Matrix<T, Rows, Columns>::GetIndexEl(int index)
+{
+    return _array[index];
+}
+
+template <typename T, std::size_t Rows, std::size_t Columns>
+T Matrix<T, Rows, Columns>::operator[](int index)
+{
+    return _array[index];
+}
+

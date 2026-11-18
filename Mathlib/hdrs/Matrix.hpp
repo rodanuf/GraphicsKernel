@@ -58,3 +58,5 @@ public:
     Matrix<T>* GetRotation(const T &angle, const Vec<T> &axis) requires(Rows == 4 && Columns == 4);
     Matrix<T>* GetTranslation(const Vec<T> &vector) requires(Rows == 4 && Columns == 4);
 };
+
+#include "Matrix.tpp"

@@ -1,26 +1,27 @@
 #pragma once
 
 #include "build/_deps/lab3_2ndsem-src/headers/array_sequence.hpp"
+#include "build/_deps/pointers-src/uniq_ptr.hpp"
 #include <cmath>
+#include <stdexcept>
 
 template <typename T, std::size_t Rows = 4, std::size_t Columns = 4>
 class Matrix 
 {
 private:
     array_sequence<T> _array{Rows * Columns};
-    std::size_t _rows;
-    std::size_t _columns;
-    bool _isSquare;
-    bool _isSingular;
-    bool _isIdentity;
+    std::size_t _rows{Rows};
+    std::size_t _columns{Columns};
+    bool _isSquare{Rows == Columns && Rows > 0};
+    bool _isSingular{true};
+    bool _isIdentity{false};
 
 public:
-    Matrix();
-    Matrix(std::size_t m, std::size_t n);
-    Matrix(const array_sequence<T> &array, std::size_t rows, std::size_t columns);
+    Matrix() = default;
+    explicit Matrix(const array_sequence<T> &array);
     Matrix(const Vec<T> &vector);
-    Matrix(const Matrix<T> &other);
-    Matrix(Matrix<T> &&other);
+    Matrix(const Matrix &other);
+    Matrix(Matrix &&other);
 
     void AddElement(int index, const T &num); // rewrite without void
     void SwapRows(int rowOne, int rowTwo);
@@ -41,22 +42,26 @@ public:
 
     T operator[](int index);
     
-    Matrix<T>& operator=(const Matrix<T> &other);
-    Matrix<T>& operator+=(const Matrix<T> &other);
-    Matrix<T> operator*(const T &value);
-    Matrix<T>* operator*(const Matrix<T> &other);
-    Matrix<T>* operator+(const Matrix<T> &other);
+    Matrix& operator=(const Matrix &other);
+    Matrix& operator+=(const Matrix &other);
+    uniq_ptr<Matrix> operator*(const T &value);
+    template <size_t OtherColumns>
+    uniq_ptr<Matrix> operator*(const Matrix &other);
+    uniq_ptr<Matrix> operator+(const Matrix &other);
 
 
 
-    Matrix<T>* Add(const Matrix &other);
-    Matrix<T>* Multiply(const Matrix &other);
-    Matrix<T>* Multiply(const T &value);
-    Matrix<T>* GetInverse();
-    Matrix<T>* GetTranspose();
-    Matrix<T>* GetScaling(const Vec<T> &scale) requires(Rows == 4 && Columns == 4);
-    Matrix<T>* GetRotation(const T &angle, const Vec<T> &axis) requires(Rows == 4 && Columns == 4);
-    Matrix<T>* GetTranslation(const Vec<T> &vector) requires(Rows == 4 && Columns == 4);
+    uniq_ptr<Matrix> Add(const Matrix &other) const;
+    uniq_ptr<Matrix> Multiply(const Matrix &other) const;
+    uniq_ptr<Matrix> Multiply(const T &value) const;
+    uniq_ptr<Matrix> GetInverse() const;
+    Matrix* GetTranspose();
+    Matrix* GetScaling(const Vec<T> &scale) requires(Rows == 4 && Columns == 4);
+    Matrix* GetRotation(const T &angle, const Vec<T> &axis) requires(Rows == 4 && Columns == 4);
+    Matrix* GetTranslation(const Vec<T> &vector) requires(Rows == 4 && Columns == 4);
+
+private:
+    int LUDecompose(Matrix &A, array_sequence<T> &P);
 };
 
 #include "Matrix.tpp"

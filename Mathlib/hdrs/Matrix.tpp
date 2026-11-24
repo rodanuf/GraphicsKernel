@@ -63,6 +63,14 @@ void Matrix<T, Rows, Columns>::SwapColumns(int colOne, int colTwo)
 }
 
 template <typename T, std::size_t Rows, std::size_t Columns>
+void Matrix<T, Rows, Columns>::SetElement(int i, int j, const T &num)
+{
+    i -= 1;
+    j -= 1;
+    _array[i + j*_rows] = num;
+}
+
+template <typename T, std::size_t Rows, std::size_t Columns>
 void Matrix<T, Rows, Columns>::Transpose()
 {
     if (_isSquare)
@@ -261,16 +269,39 @@ uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::Multiply(const T &v
 }
 
 template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetInverse()
+uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetInverse() const
 {
+    if (_isSingular)
+    {
+        throw std::runtime_error("Matrix is singular, cannot compute inverse.");
+    }
 
+    array_sequence<int> P;
+    Matrix<T, Rows, Columns> *A  = new Martrix(*this);
+    int s = LUDecompose(*A, P);
+    return InverseLU(*A, P);
 }
 
 template <typename T, size_t Rows, size_t Columns>
-int Matrix<T, Rows, Columns>::LUDecompose(Matrix<T, Rows, Columns> &A, array_sequence<T> &P)
+uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetTranspose() const
 {
+    Matrix<T, Rows, Columns> *result = new Matrix(*this);
+    result->Transpose();
+    return uniq_ptr<Matrix<T, Rows, Columns>>(result);
+}
+
+template <typename T, size_t Rows, size_t Columns>
+int Matrix<T, Rows, Columns>::LUDecompose(Matrix<T, Rows, Columns> &A, array_sequence<int> &P)
+{
+    P.clear();
+    P = array_sequence<int>(_rows);
+    for (int i = 0; i < _rows; i++)
+    {
+        P[i] = i;
+    }
     int s = 0;
     int target_line;
+    int buffer = 0;
     T max_el = 0;
     T det = 0;
 
@@ -293,6 +324,9 @@ int Matrix<T, Rows, Columns>::LUDecompose(Matrix<T, Rows, Columns> &A, array_seq
         }
         if (k != target_line)
         {
+            buffer = P[k];
+            P[k] = P[target_line];
+            P[target_line] = buffer;
             A.SwapRows(k, target_line);
             s += 1; 
         }
@@ -300,10 +334,98 @@ int Matrix<T, Rows, Columns>::LUDecompose(Matrix<T, Rows, Columns> &A, array_seq
         for (int i = k + 1; i < _rows; i++)
         {
             T factor = A[k*_rows + i]/A[k*_columns + k];
+            A[k*_rows + i] = factor;
             for (int j = k + 1; j < _columns; j++)
             {
                 A[j*_rows + i] -= facor * A[j*_rows + k];
             }
         }
     }
+
+    return s;
+}
+
+template <typename T, size_t Rows, size_t Columns>
+uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetScaling(const Vec<T> &scale) 
+requires (Rows == 4 && Columns == 4)
+{
+    Matrix<T, Rows, Columns> *result = new Matrix();
+    for (int i = 1; i < 4; i ++)
+    {
+        result->SetElement(i, i, 1);
+    }
+    for (int i = 1; i < 3; i++)
+    {
+        result->SetElement(i, 4, scale[i - 1]);
+    }
+
+    return uniq_ptr<Matrix<T, Rows, Columns>>(result);
+}
+
+template <typename T, size_t Rows, size_t Columns>
+uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetRotation(const T &angle, const Vec<T> &axis)
+requires (Rows == 4 && Columns == 4)
+{
+    Matrix<T, Rows, Columns> *result = new Matrix();
+    T c = std::cos(angle);
+    T s = std::sin(angle);
+    T t = 1 - c;
+    T x = axis[0];
+    T y = axis[1];
+    T z = axis[2];
+
+    result->SetElement(1, 1, t*x*x + c);
+    result->SetElement(1, 2, t*x*y - s*z);
+    result->SetElement(1, 3, t*x*z + s*y);
+    result->SetElement(2, 1, t*x*y + s*z);
+    result->SetElement(2, 2, t*y*y + c);
+    result->SetElement(2, 3, t*y*z - s*x);
+    result->SetElement(3, 1, t*x*z - s*y);
+    result->SetElement(3, 2, t*y*z + s*x);
+    result->SetElement(3, 3, t*z*z + c);
+    result->SetElement(4, 4, 1);
+
+    return uniq_ptr<Matrix<T, Rows, Columns>>(result);
+}
+
+template <typename T, size_t Rows, size_t Columns>
+uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::InverseLU(const Matrix<T, Rows, Columns> &LU, const array_sequence<int> &P)
+{
+    Matrix<T, Rows, Columns> *result = new Matrix();
+    for (int k = 1; k < _rows + 1; k++)
+    {
+        for (int i = 1; i < _rows + 1; i++)
+        {
+            if (P[i - 1] + 1 == k)
+            {
+                result->SetElement(i, k, 1);
+            }
+            else
+            {
+                result->SetElement(i, k, 0);
+            }
+        }
+
+        for (int i = 1; i < _rows + 1; i++)
+        {
+            T sum = result->GetElement(i, k);
+            for (int j = 1; j < i; j++)
+            {
+                sum -= LU.GetElement(i, j) * result->GetElement(j, k);
+            }
+            result->SetElement(i, k, sum);
+        }
+
+        for (int i = _rows; i >= 0; i--)
+        {
+            T sum = result->GetElement(i, k);
+            for (int j = i + 1; j < _rows + 1; j++)
+            {
+                sum -= LU.GetElement(i, j) * result->GetElement(j, k);
+            }
+            result->SetElement(i, k, sum / LU.GetElement(i, i));
+        }
+    }
+
+    return uniq_ptr<Matrix<T, Rows, Columns>>(result);
 }

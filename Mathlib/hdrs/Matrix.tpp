@@ -29,10 +29,6 @@ Matrix<T, Rows, Columns>::Matrix(const Matrix<T, Rows, Columns> &other) : _array
 }
 
 template <typename T, std::size_t Rows, std::size_t Columns>
-Matrix<T, Rows, Columns>::Matrix(Matrix<T> &&other) : 
-
-
-template <typename T, std::size_t Rows, std::size_t Columns>
 void Matrix<T, Rows, Columns>::AddElement(int index, const T &num)
 {
     _array[i] += num;
@@ -193,23 +189,23 @@ Matrix<T, Rows, Columns>& Matrix<T, Rows, Columns>::operator+=(const Matrix<T, R
 }
 
 template <typename T, std::size_t Rows, std::size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::operator*(const T &value)
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::operator*(const T &value)
 {
-    Matrix<T, Rows, Columns> *result = new Matrix(*this);
+    Matrix<T, Rows, Columns> result = *this;
 
     for (int i = 0; i < _array.get_length(); i++)
     {
-        result->_array[i] = _array[i];
+        result[i] = (*this)[i] * value;
     }
 
-    return  uniq_ptr matrixPtr(result);
+    return  result;
 } 
 
-template <typename T, size_t Rows, std::size_t Columns>
+template <typename T, std::size_t Rows, std::size_t Columns>
 template <size_t OtherColumns> 
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::operator*(const Matrix<T, Rows, Columns> &other)
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::operator*(const Matrix<T, Rows, Columns> &other)
 {
-    Matrix<T, Rows, Column> *result = new Matrix();
+    Matrix<T, Rows, Column> result;
     int numRow = 1;
     T p = 0;
 
@@ -220,7 +216,7 @@ uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::operator*(const Mat
            p += (*this).GetElement(numRow, k) * other.GetElement(k, j + numRow);
         }
 
-        (*result)[j*_rows + numRow - 1] = p;
+        result[j*_rows + numRow - 1] = p;
         p = 0;
 
         if (j == _columns - 1 && numRow < _rows)
@@ -235,41 +231,41 @@ uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::operator*(const Mat
 }
 
 template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::operator+(const Matrix &other)
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::operator+(const Matrix &other)
 {
-    Matrix<T, Rows, Columns> *result = new Matrix();
+    Matrix<T, Rows, Columns> result;
 
     for (int i = 0; i < _array.get_length(); i++)
     {
-        result->SetElement(i) = _array[i] + other.GetIndexEl(i);
+        result.SetElement(i) = _array[i] + other.GetIndexEl(i);
     }
 
     return uniq_ptr(result);
 }
 
 template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::Add(const Matrix<T, Rows, Columns> &other) const
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::Add(const Matrix<T, Rows, Columns> &other) const
 {
     auto result = *this + other;
     return result;
 }
 
 template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::Multiply(const Matrix &other) const 
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::Multiply(const Matrix &other) const 
 {
     auto result = *this * other;
     return result;
 }
 
 template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::Multiply(const T &value) const
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::Multiply(const T &value) const
 {
     auto result = *this * value;
     return result;
 }
 
 template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetInverse() const
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetInverse() const
 {
     if (_isSingular)
     {
@@ -283,14 +279,83 @@ uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetInverse() const
 }
 
 template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetTranspose() const
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetTranspose() const
 {
-    Matrix<T, Rows, Columns> *result = new Matrix(*this);
-    result->Transpose();
-    return uniq_ptr<Matrix<T, Rows, Columns>>(result);
+    Matrix<T, Rows, Columns> result = *this;
+    result.Transpose();
+    return result;
 }
 
-template <typename T, size_t Rows, size_t Columns>
+template <typename T, std::size_t Rows, std::size_t Columns>
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetIdentity()
+{
+    Matrix<T, Rows, Columns> result;
+
+    for (int i = 1; i < _array.get_length() + 1; i++)
+    {
+        result.SetElement(i, i, 1);
+    }
+
+    return result;
+}
+
+template <typename T, std::size_t Rows, std::size_t Columns>
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetScaling(const Vec<T> &scale) 
+requires (Rows == 4 && Columns == 4)
+{
+    Matrix<T, Rows, Columns> result;
+    for (int i = 1; i < 5; i ++)
+    {
+        result.SetElement(i, i, scale[i]);
+    }
+    result.SetElement(4, 4, 1);
+    return result;
+}
+
+template <typename T, std::size_t Rows, std::size_t Columns>
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetRotation(const T &angle, const Vec<T> &axis)
+requires (Rows == 4 && Columns == 4)
+{
+    Matrix<T, Rows, Columns> result;
+    T c = std::cos(angle);
+    T s = std::sin(angle);
+    T t = 1 - c;
+    T x = axis[0];
+    T y = axis[1];
+    T z = axis[2];
+
+    result.SetElement(1, 1, t*x*x + c);
+    result.SetElement(1, 2, t*x*y - s*z);
+    result.SetElement(1, 3, t*x*z + s*y);
+    result.SetElement(2, 1, t*x*y + s*z);
+    result.SetElement(2, 2, t*y*y + c);
+    result.SetElement(2, 3, t*y*z - s*x);
+    result.SetElement(3, 1, t*x*z - s*y);
+    result.SetElement(3, 2, t*y*z + s*x);
+    result.SetElement(3, 3, t*z*z + c);
+    result.SetElement(4, 4, 1);
+
+    return result;
+}
+
+template <typename T, std::size_t Rows, std::size_t Columns>
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetTranslation(const Vec<T> &vector)
+requires(Rows == 4 && Columns == 4)
+{
+    Martix<T, Rows, Columns> result;
+    for (int i = 1; i < 5; i ++)
+    {
+        result.SetElement(i, i, 1);
+    }
+    for (int i = 1; i < 4; i++)
+    {
+        result.SetElement(i, 4, scale[i - 1]);
+    }
+
+    return result;
+}
+
+template <typename T, std::size_t Rows, std::size_t Columns>
 int Matrix<T, Rows, Columns>::LUDecompose(Matrix<T, Rows, Columns> &A, array_sequence<int> &P)
 {
     P.clear();
@@ -345,51 +410,8 @@ int Matrix<T, Rows, Columns>::LUDecompose(Matrix<T, Rows, Columns> &A, array_seq
     return s;
 }
 
-template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetScaling(const Vec<T> &scale) 
-requires (Rows == 4 && Columns == 4)
-{
-    Matrix<T, Rows, Columns> *result = new Matrix();
-    for (int i = 1; i < 4; i ++)
-    {
-        result->SetElement(i, i, 1);
-    }
-    for (int i = 1; i < 3; i++)
-    {
-        result->SetElement(i, 4, scale[i - 1]);
-    }
-
-    return uniq_ptr<Matrix<T, Rows, Columns>>(result);
-}
-
-template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::GetRotation(const T &angle, const Vec<T> &axis)
-requires (Rows == 4 && Columns == 4)
-{
-    Matrix<T, Rows, Columns> *result = new Matrix();
-    T c = std::cos(angle);
-    T s = std::sin(angle);
-    T t = 1 - c;
-    T x = axis[0];
-    T y = axis[1];
-    T z = axis[2];
-
-    result->SetElement(1, 1, t*x*x + c);
-    result->SetElement(1, 2, t*x*y - s*z);
-    result->SetElement(1, 3, t*x*z + s*y);
-    result->SetElement(2, 1, t*x*y + s*z);
-    result->SetElement(2, 2, t*y*y + c);
-    result->SetElement(2, 3, t*y*z - s*x);
-    result->SetElement(3, 1, t*x*z - s*y);
-    result->SetElement(3, 2, t*y*z + s*x);
-    result->SetElement(3, 3, t*z*z + c);
-    result->SetElement(4, 4, 1);
-
-    return uniq_ptr<Matrix<T, Rows, Columns>>(result);
-}
-
-template <typename T, size_t Rows, size_t Columns>
-uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::InverseLU(const Matrix<T, Rows, Columns> &LU, const array_sequence<int> &P)
+template <typename T, std::size_t Rows, std::size_t Columns>
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::InverseLU(const Matrix<T, Rows, Columns> &LU, const array_sequence<int> &P)
 {
     Matrix<T, Rows, Columns> *result = new Matrix();
     for (int k = 1; k < _rows + 1; k++)
@@ -427,5 +449,5 @@ uniq_ptr<Matrix<T, Rows, Columns>> Matrix<T, Rows, Columns>::InverseLU(const Mat
         }
     }
 
-    return uniq_ptr<Matrix<T, Rows, Columns>>(result);
+    return Matrix<T, Rows, Columns>>(result);
 }

@@ -11,16 +11,9 @@ _array(array), _rows(Rows), _columns(Columns), _isSquare(Rows == Columns && Rows
 }
 
 template <typename T, std::size_t Rows, std::size_t Columns>
-Matrix<T, Rows, Columns>::Matrix(const Vec<T> &vector) : _array(vector.get_length()), _rows(vector.get_length()), _columns(1), _isSquare(m == n), isSingular(false), _isIndentity(false) {}
-{
-    for (int i = 0; i < vector.get_length(); i++)
-    {
-        array[i] = vector[i];
-    }
-}
-
-template <typename T, std::size_t Rows, std::size_t Columns>
-Matrix<T, Rows, Columns>::Matrix(const Matrix<T, Rows, Columns> &other) : _array(other.GetSize()), _rows(other.GetNumRows()), _Columns(other.GetNumCol()), _isSquare(other.IsSquare()), _isSingular(other.IsSingular()), _isIdentity(other.IsIdentity()) 
+Matrix<T, Rows, Columns>::Matrix(const Matrix<T, Rows, Columns> &other) :
+_array(other._array), _rows(other._rows), _columns(other._columns),
+_isSquare(other._isSquare), _isSingular(other._isSingular), _isIdentity(other._isIdentity)
 {
     for (int i = 0; i < other.GetSize(); i++)
     {
@@ -202,10 +195,10 @@ Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::operator*(const T &value)
 } 
 
 template <typename T, std::size_t Rows, std::size_t Columns>
-template <size_t OtherColumns> 
-Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::operator*(const Matrix<T, Rows, Columns> &other)
+template <std::size_t OtherColumns> 
+Matrix<T, Columns, OtherColumns> Matrix<T, Rows, Columns>::operator*(const Matrix<T, Columns, OtherColumns> &other) const
 {
-    Matrix<T, Rows, Column> result;
+    Matrix<T, Columns, OtherColumns> result;
     int numRow = 1;
     T p = 0;
 
@@ -227,7 +220,7 @@ Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::operator*(const Matrix<T, Row
         }
     }
 
-    return uniq_ptr<Matrix<T, Rows, Columns>> (result);
+    return result;
 }
 
 template <typename T, size_t Rows, size_t Columns>
@@ -300,21 +293,19 @@ Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetIdentity()
 }
 
 template <typename T, std::size_t Rows, std::size_t Columns>
-Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetScaling(const Vec<T> &scale) 
-requires (Rows == 4 && Columns == 4)
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetScaling(const Vec<T, 3> &scale)
 {
     Matrix<T, Rows, Columns> result;
-    for (int i = 1; i < 5; i ++)
+    for (int i = 1; i < 4; i ++)
     {
-        result.SetElement(i, i, scale[i]);
+        result.SetElement(i, i, scale[i - 1]);
     }
     result.SetElement(4, 4, 1);
     return result;
 }
 
 template <typename T, std::size_t Rows, std::size_t Columns>
-Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetRotation(const T &angle, const Vec<T> &axis)
-requires (Rows == 4 && Columns == 4)
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetRotation(const T &angle, const Vec<T, 3> &axis)
 {
     Matrix<T, Rows, Columns> result;
     T c = std::cos(angle);
@@ -339,8 +330,7 @@ requires (Rows == 4 && Columns == 4)
 }
 
 template <typename T, std::size_t Rows, std::size_t Columns>
-Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetTranslation(const Vec<T> &vector)
-requires(Rows == 4 && Columns == 4)
+Matrix<T, Rows, Columns> Matrix<T, Rows, Columns>::GetTranslation(const Vec<T, 3> &vector)
 {
     Martix<T, Rows, Columns> result;
     for (int i = 1; i < 5; i ++)

@@ -1,9 +1,13 @@
 #pragma once
 
+#include "build/_deps/lab3_2ndsem-src/headers/fixed_array.hpp"
 #include "build/_deps/lab3_2ndsem-src/headers/array_sequence.hpp"
-#include "build/_deps/pointers-src/uniq_ptr.hpp"
+
 #include <cmath>
 #include <stdexcept>
+
+template <typename T, std::size_t N>
+class Vec;
 
 template <typename T, std::size_t Rows = 4, std::size_t Columns = 4>
 class Matrix 
@@ -19,8 +23,7 @@ private:
 public:
     Matrix() = default;
     explicit Matrix(const array_sequence<T> &array);
-    Matrix(const Vec<T> &vector);
-    Matrix(const Matrix &other);
+    Matrix(const Matrix<T, Rows, Columns> &other);
 
     void AddElement(int index, const T &num); // rewrite without void
     void SwapRows(int rowOne, int rowTwo);
@@ -35,6 +38,8 @@ public:
     int GetSize();
     int GetNumRows();
     int GetNumCol();
+    template <std::size_t OtherColumns>
+    Matrix<T, Columns, OtherColumns> operator*(const Matrix<T, Columns, OtherColumns> &other) const;
 
     T CalculateDet();
     T GetElement(int i, int j);
@@ -45,8 +50,9 @@ public:
     Matrix& operator=(const Matrix &other);
     Matrix& operator+=(const Matrix &other);
     Matrix operator*(const T &value);
-    template <size_t OtherColumns>
-    Matrix operator*(const Matrix &other);
+    Vec<T, N> operator*(const Vec &other);
+    template <std::size_t OtherColumns>
+    Matrix<T, Columns, OtherColumns> operator*(const Matrix<T, Columns, OtherColumns> &other) const;
     Matrix operator+(const Matrix &other);
 
 
@@ -57,13 +63,14 @@ public:
     Matrix GetInverse() const;
     Matrix GetTranspose() const;
     static Matrix GetIdentity();
-    static Matrix GetScaling(const Vec<T> &scale) requires(Rows == 4 && Columns == 4);
-    static Matrix GetRotation(const T &angle, const Vec<T> &axis) requires(Rows == 4 && Columns == 4);
-    static Matrix GetTranslation(const Vec<T> &vector) requires(Rows == 4 && Columns == 4);
+    static Matrix GetScaling(const Vec<T, 3> &scale) requires(Rows == 4 && Columns == 4);
+    static Matrix GetRotation(const T &angle, const Vec<T, 3> &axis) requires(Rows == 4 && Columns == 4);
+    static Matrix GetTranslation(const Vec<T, 3> &vector) requires(Rows == 4 && Columns == 4);
 
 private:
     int LUDecompose(Matrix &A, array_sequence<int> &P);
     Matrix InverseLU(const Matrix &A, const array_sequence<int> &P);
 };
 
+#include "Vec.hpp"
 #include "Matrix.tpp"
